@@ -1,6 +1,7 @@
 # 환경 변수 파일
 *.env
 openai_key.env
+password.env
 
 # 파이썬 관련 파일
 __pycache__/
