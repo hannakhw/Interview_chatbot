@@ -1,0 +1,16 @@
+# 환경 변수 파일
+*.env
+openai_key.env
+
+# 파이썬 관련 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+venv/
+env/
+.env/
+
+# 시스템 파일
+.DS_Store
