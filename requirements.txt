@@ -8,4 +8,4 @@ python-dotenv
 # faiss-cpu==1.7.4 스트림릿에서 호환이 안되어 제거함
 chromadb
 unstructured
-python-magic-bin
+python-magic
