@@ -54,7 +54,6 @@ def setup_chat_chain():
     try:
         print("Setting up chat chain...")
         current_dir = Path(__file__).parent.parent
-        vectorstore_path = os.path.join(current_dir, "data", "vectorstore")
         chroma_path = os.path.join(current_dir, "data", "chroma")
         
         embed_model = OpenAIEmbeddings(
