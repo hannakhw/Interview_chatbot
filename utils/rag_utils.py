@@ -1,6 +1,6 @@
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableParallel, RunnableLambda, RunnablePassthrough
@@ -23,6 +23,7 @@ def create_and_save_vectorstore():
     try:
         current_dir = Path(__file__).parent.parent
         documents_path = os.path.join(current_dir, "data", "documents")
+        chroma_path = os.path.join(current_dir, "data", "chroma")
         
         loader = DirectoryLoader(documents_path, glob="*.txt", show_progress=True)
         data = loader.load()
@@ -35,15 +36,14 @@ def create_and_save_vectorstore():
             model='text-embedding-3-small'
         )
         
-        vector_index = FAISS.from_documents(all_splits, embed_model)
+        vector_index = Chroma.from_documents(
+            documents=all_splits,
+            embedding=embed_model,
+            persist_directory=chroma_path 
+        )
         print("Vector store created successfully")
-        
-        # 저장 시 디렉토리가 있는지 확인
-        os.makedirs("data", exist_ok=True)
-        vectorstore_path = os.path.join(current_dir, "data", "vectorstore")
-        vector_index.save_local(vectorstore_path)
-        print("Vector store saved successfully")
         return vector_index
+    
     except Exception as e:
         print(f"Detailed error in create_and_save_vectorstore: {e}")
         return None
@@ -55,6 +55,7 @@ def setup_chat_chain():
         print("Setting up chat chain...")
         current_dir = Path(__file__).parent.parent
         vectorstore_path = os.path.join(current_dir, "data", "vectorstore")
+        chroma_path = os.path.join(current_dir, "data", "chroma")
         
         embed_model = OpenAIEmbeddings(
             openai_api_key=api_key,
@@ -62,16 +63,15 @@ def setup_chat_chain():
         )
         
         # 벡터스토어 존재 여부 확인
-        if not os.path.exists(vectorstore_path):
+        if os.path.exists(chroma_path):
+            print("Loading existing vector store...")
+            vector_index = Chroma(
+                persist_directory=chroma_path,
+                embedding_function=embed_model
+            )
+        else:
             print("Vector store not found, creating new one...")
             vector_index = create_and_save_vectorstore()
-        else:
-            print("Loading existing vector store...")
-            vector_index = FAISS.load_local(
-                vectorstore_path, 
-                embed_model,
-                allow_dangerous_deserialization=True
-            )
         
         if vector_index is None:
             raise Exception("Failed to initialize vector store")
