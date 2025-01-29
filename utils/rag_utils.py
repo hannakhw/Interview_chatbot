@@ -21,7 +21,10 @@ api_key = os.getenv('OPENAI_API_KEY')
 def create_and_save_vectorstore():
     """벡터 스토어 생성 및 저장"""
     try:
-        loader = DirectoryLoader("/Users/alookso/Desktop/2025 취준/hw_chatbot_RAG/data/documents", glob="*.txt", show_progress=True)
+        current_dir = Path(__file__).parent.parent
+        documents_path = os.path.join(current_dir, "data", "documents")
+        
+        loader = DirectoryLoader(documents_path, glob="*.txt", show_progress=True)
         data = loader.load()
         
         text_splitter = TokenTextSplitter(chunk_size=500, chunk_overlap=50)
@@ -37,7 +40,8 @@ def create_and_save_vectorstore():
         
         # 저장 시 디렉토리가 있는지 확인
         os.makedirs("data", exist_ok=True)
-        vector_index.save_local("data/vectorstore")
+        vectorstore_path = os.path.join(current_dir, "data", "vectorstore")
+        vector_index.save_local(vectorstore_path)
         print("Vector store saved successfully")
         return vector_index
     except Exception as e:
@@ -45,61 +49,26 @@ def create_and_save_vectorstore():
         return None
 
 
-# def create_and_save_vectorstore():
-#     """챗봇 체인 설정"""
-#     try:
-#         # 벡터스토어가 이미 있다고 가정하고 로드
-#         embed_model = OpenAIEmbeddings(
-#             openai_api_key=api_key,
-#             model='text-embedding-3-small'
-#         )
-        
-#         vector_index = FAISS.load_local("data/vectorstore", embed_model)
-            
-#         retriever = vector_index.as_retriever(k=5)
-        
-    
-    # """벡터 스토어 생성 및 저장"""
-    # try:
-    #     loader = DirectoryLoader("/Users/alookso/Desktop/2025 취준/hw_chatbot_RAG/data/documents", glob="*.txt", show_progress=True)
-    #     data = loader.load()
-        
-    #     from langchain_text_splitters import TokenTextSplitter
-    #     text_splitter = TokenTextSplitter(chunk_size=100, chunk_overlap=20)
-    #     all_splits = text_splitter.split_documents(data)
-        
-    #     embed_model = OpenAIEmbeddings(
-    #         openai_api_key=api_key,
-    #         model='text-embedding-3-small'
-        # )
-        
-    #     vector_index = FAISS.from_documents(all_splits, embed_model)
-    #     vector_index.save_local("data/vectorstore")
-    #     return vector_index
-    
-    
-    # except Exception as e:
-    #     print(f"Error retrieving vector store: {e}")
-    #     return None
-
 def setup_chat_chain():
     """챗봇 체인 설정"""
     try:
         print("Setting up chat chain...")
-        # 저장된 벡터 스토어 로드
+        current_dir = Path(__file__).parent.parent
+        vectorstore_path = os.path.join(current_dir, "data", "vectorstore")
+        
         embed_model = OpenAIEmbeddings(
             openai_api_key=api_key,
             model='text-embedding-3-small'
         )
         
         # 벡터스토어 존재 여부 확인
-        if not os.path.exists("data/vectorstore"):
+        if not os.path.exists(vectorstore_path):
             print("Vector store not found, creating new one...")
             vector_index = create_and_save_vectorstore()
         else:
             print("Loading existing vector store...")
             vector_index = FAISS.load_local(
-                "data/vectorstore", 
+                vectorstore_path, 
                 embed_model,
                 allow_dangerous_deserialization=True
             )
@@ -107,21 +76,6 @@ def setup_chat_chain():
         if vector_index is None:
             raise Exception("Failed to initialize vector store")
         
-        # # allow_dangerous_deserialization=True 추가
-        # vector_index = FAISS.load_local(
-        #     "data/vectorstore", 
-        #     embed_model,
-        #     allow_dangerous_deserialization=True  # 우리가 직접 만든 파일이므로 안전함
-        # )
-        
-        # if os.path.exists("data/vectorstore"):
-        #     vector_index = FAISS.load_local("data/vectorstore", embed_model)
-        
-        # else:
-        #     vector_index = create_and_save_vectorstore()
-            
-        # if not vector_index:
-        #     return None
         
         print("Setting up retriever...")
         retriever = vector_index.as_retriever(k=5)
@@ -180,80 +134,3 @@ def setup_chat_chain():
 
 
 
-
-
-
-
-
-
-
-
-
-
-# from langchain_community.vectorstores import FAISS
-# from langchain_huggingface import HuggingFaceEmbeddings
-# from langchain_openai import ChatOpenAI
-# from langchain.chains import ConversationalRetrievalChain
-# import os
-# from dotenv import load_dotenv
-
-# from langchain_community.document_loaders import PyPDFLoader
-# # from langchain_community.document_loaders import DirectoryLoader
-# # from langchain.text_splitter import CharacterTextSplitter
-# # from langchain_community.vectorstores import FAISS
-# # from langchain_community.chat_models import ChatOpenAI    # 변경됨
-
-# load_dotenv()
-
-# # API 키 확인
-# if not os.getenv("OPENAI_API_KEY"):
-#     raise ValueError("OPENAI_API_KEY not found in environment variables")
-
-# def create_and_save_vectorstore():
-#     """벡터 스토어를 생성하고 저장하는 함수 - 최초 1회만 실행"""
-#     print("Creating new vector store...")
-#     loader = PyPDFLoader("./data/documents/이력서_김효원.pdf")
-#     documents = loader.load()
-#     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-#     texts = text_splitter.split_documents(documents)
-#     embeddings = HuggingFaceEmbeddings(
-#             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-#         )
-#     vectorstore = FAISS.from_documents(texts, embeddings)
-#     # 벡터 스토어 저장
-    
-#     vectorstore.save_local("vectorstore")
-#     print("Vector store saved successfully")
-#     return vectorstore
-
-
-# def setup_rag():
-#     """저장된 벡터 스토어를 로드하여 RAG 시스템 구축"""
-#     try:
-#         embeddings = HuggingFaceEmbeddings(
-#             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-#         )
-        
-#         # 저장된 벡터 스토어가 있으면 로드, 없으면 새로 생성
-#         if os.path.exists("vectorstore"):
-#             vectorstore = FAISS.load_local("vectorstore", embeddings)
-#         else:
-#             vectorstore = create_and_save_vectorstore()
-            
-#         if not vectorstore:
-#             return None
-            
-#         llm = ChatOpenAI(temperature=0.7)
-#         qa_chain = ConversationalRetrievalChain.from_llm(
-#             llm,
-#             retriever=vectorstore.as_retriever(),
-#             return_source_documents=True
-#         )
-        
-#         return qa_chain
-        
-#     except Exception as e:
-#         print(f"Error in setup_rag: {e}")
-#         return None
-    
-    
